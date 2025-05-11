@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Page</title>
+
+    <!-- FontAwesomeのスタイルシートを追加 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+
+
+{% block content %}
+<h1>Attendance Page</h1>
+
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+<div class="container">
+	<div class="row justify-content-centter">
+		<div class="col-md-8">
+			<div class="card">
+				<div class="card-header">{{ guestLogin }}</div>
+				<div "card-body">
+					{% if messages %}
+						{% for message in messages %}
+							<div class="aleart alert-danger" role="alert">
+							{{ message }}
+							</div>
+						{% endfor %}
+					{% endif %}
+					<form method="POST">
+						{% csrf_token %}
+						{{ form.as_p }}
+						<button type="submit" class="btn btn-prymary">ログイン</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+</body>
+</html>

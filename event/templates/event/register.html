@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <title>Create Table</title>
+
+    <!-- FontAwesomeのスタイルシートを追加 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            width: 100%;
+            text-align: left;
+        }
+     
+        button.submit-button {
+            width: 100%;
+            padding: 10px;
+            background-color: green; /* 緑色に戻す */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button.submit-button:hover {
+            background-color: darkgreen; /* ホバー時の色を変更 */
+        }
+        
+        #header {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #branding {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0; /* マージンを追加 */
+        }
+
+        #login-links {
+            text-align: right;
+            margin-top: 10px; /* リンクと"You are not logged in"の間に隙間を追加 */
+        }
+
+        #login-link,
+        #sign-link {
+            color: white;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+	
+	<div id="header">
+        <p id="branding">Let’s Chousei!</p>
+        <div id="login-links">            
+            <p>You are not logged in</p>
+        </div>
+    </div>
+    
+<h1>会員登録</h1>
+
+<form action="{% url 'event:register' %}" method="post">
+  {% csrf_token %}
+
+  <label for="{{ form.email.id_for_label }}">メールアドレス:</label>
+  {{ form.email }}
+  
+  <label for="{{ form.username.id_for_label }}">ユーザ名:</label>
+  {{ form.username }}
+
+  <label for="{{ form.password1.id_for_label }}">パスワード:</label>
+  {{ form.password1 }}
+   <small> パスワードには少なくとも 8 文字を含める必要があり（全て数字はできません）,ユーザー名や電子メールと同じものは使用できません. </small>
+
+  <label for="{{ form.password2.id_for_label }}">パスワードの再入力:</label>
+  {{ form.password2 }}
+  
+  <input type="hidden" name="next" value="{{ request.GET.next }}">
+  
+<!-- 登録ボタン -->
+      <button type="submit" class="submit-button" id="submit">登録</button>  
+  </form>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <title>Create Table</title>
+
+    <!-- FontAwesomeのスタイルシートを追加 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            width: 100%;
+            text-align: left;
+        }
+
+        #my-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        #my-table th, #my-table td {
+            padding: 8px;
+            border: 1px solid gray;
+            text-align: center;
+        }
+
+        #my-table th:not(:first-child),
+        #my-table td:not(:first-child) {
+            width: calc(33.33% - 2px); /* 列の幅を均等に割り当てる */
+        }
+
+        #my-table td input {
+            width: calc(100% - 12px); /* 入力フィールドの幅を調整 */
+        }
+
+        button.delete-button {
+            width: 100%;
+            padding: 10px;
+            background-color: gray; /* グレーに変更 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button.delete-button:hover {
+            background-color: darkgray; /* ホバー時の色を変更 */
+        }
+
+        button.submit-button {
+            width: 100%;
+            padding: 10px;
+            background-color: green; /* 緑色に戻す */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button.submit-button:hover {
+            background-color: darkgreen; /* ホバー時の色を変更 */
+        }
+
+        #header {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #branding {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0; /* マージンを追加 */
+        }
+
+        #login-links {
+            text-align: right;
+            margin-top: 10px; /* リンクと"You are not logged in"の間に隙間を追加 */
+        }
+
+        #login-link,
+        #sign-link {
+            color: white;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+{# 登録完了メッセージを表示 #}
+{% if messages %}
+    {% for message in messages %}
+        {% if message.tags %}
+            <script>alert("{{ message }}")</script>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{# 出たメッセージを消す #}
+{% if messages %}
+    {% for message in messages %}
+    {% endfor %}
+{% endif %}
+    
+<body>
+    <div id="header">
+        <p id="branding">Let’s Chousei!</p>
+        <div id="login-links">
+            <p>{% if user.is_authenticated %}
+            {{ user.username }} | 
+            <a href="{% url 'event:logout' %}">Log Out</a>
+            {% else %}
+            You are not logged in</p>
+            <a href="{% url 'event:login' %}?next={{ request.path }}" id="login-link">Log In</a>
+            |<a href="{% url 'event:register' %}?next={{ request.path }}" id="sign-link">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <h1>日程表の作成</h1>
+
+    <form action="{% url 'event:create_table' %}" method="POST" id="my-form" onsubmit="return validateForm()">
+        {% csrf_token %}
+
+        <!-- イベント名 -->
+		<label for="event">イベント名: <span style="color: red;">(必須入力)</span></label>
+		<input type="text" name="event" required maxlength="255">
+		
+		<!-- パスワード -->
+		<label for="password">パスワード: <span style="color: red;">(必須入力)</span></label>
+		<input type="password" name="password" required maxlength="255">
+		
+		<!-- 都道府県 -->
+		<label for="address">都道府県: <span style="color: red;">(必須入力)</span></label>
+		<input type="text" name="address" required maxlength="255">
+		
+		<!-- フリーテキスト -->
+		<label for="freetext">フリーテキスト: <span style="color: black;">(任意入力)</span></label>
+		<textarea name="freetext"></textarea>
+
+       <label for="my-table" style="margin-bottom: 0;">日程表:<span style="color: red;">(必須入力)</span></label>
+		<p style="font-size: 0.8em; color: gray; margin-top: 0; margin-bottom: 3px;">入力欄右のアイコンをクリックして，日付や時間を入力してください．</p>
+		<table id="my-table">
+            <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>開始時間</th>
+                    <th>終了時間</th>
+                    <th>削除</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="row">
+                    <td><input type="date" name="dates[]"></td>
+                    <td><input type="time" name="start_times[]"></td>
+                    <td><input type="time" name="end_times[]"></td>
+                    <!-- FontAwesomeのゴミ箱アイコンを追加 -->
+                    <td><button type="button" class="delete-button" onclick="removeExample(this)"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 送信ボタン -->
+        <button type="button" class="submit-button" onclick="submitAndRemoveExample(this)">送信</button>
+
+    </form>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 入力が完了したら新しい行を追加
+            $(document).on('change', '#my-table .row:last-child input[type="date"], #my-table .row:last-child input[type="time"]', function() {
+                var date = $('#my-table .row:last-child input[type="date"]').val();
+                var startTime = $('#my-table .row:last-child input[type="time"]').eq(0).val();
+                var endTime = $('#my-table .row:last-child input[type="time"]').eq(1).val();
+
+                if (date && startTime && endTime) {
+                    addNewRow();
+                }
+            });
+
+            // 行を追加する関数
+            function addNewRow() {
+                var newRow = '<tr class="row">' +
+                                '<td><input type="date" name="dates[]"></td>' +
+                                '<td><input type="time" name="start_times[]"></td>' +
+                                '<td><input type="time" name="end_times[]"></td>' +
+                                '<td><button type="button" class="delete-button" onclick="removeExample(this)"><i class="fas fa-trash"></i></button></td>' +
+                             '</tr>';
+
+                // 新しい行をテーブルに追加
+                $('#my-table tbody').append(newRow);
+            }
+        });
+
+        function submitAndRemoveExample() {
+            // イベント名、パスワード、県名の入力値を取得
+            var eventInput = document.getElementsByName('event')[0].value.trim();
+            var passwordInput = document.getElementsByName('password')[0].value.trim();
+            var addressInput = document.getElementsByName('address')[0].value.trim();
+
+            // 日程表の日付、開始時間、終了時間の入力値を取得
+            var dateInputs = document.getElementsByName('dates[]');
+            var startTimeInputs = document.getElementsByName('start_times[]');
+            var endTimeInputs = document.getElementsByName('end_times[]');
+
+            // イベント名、パスワード、県名のいずれかが空の場合は警告
+            if (eventInput === '' || passwordInput === '' || addressInput === '') {
+                alert('全ての項目を入力してください。');
+                return false;  // フォーム送信を中止
+            }
+
+            // 日程表のいずれかの入力が空の場合は警告
+            for (var i = 0; i < dateInputs.length; i++) {
+                var dateInput = dateInputs[i].value.trim();
+                var startTimeInput = startTimeInputs[i].value.trim();
+                var endTimeInput = endTimeInputs[i].value.trim();
+
+                var tableElem = document.getElementById('my-table');
+
+                if (tableElem.rows.length <= 2) {
+                    if (dateInput === '' || startTimeInput === '' || endTimeInput === '') {
+                        alert('全ての日程を入力してください。');
+                        return false;  // フォーム送信を中止
+                    }
+                } else {
+                    if (dateInput === '' && startTimeInput === '' && endTimeInput === '') {
+                        removeBottomRow();
+                        return true;  // フォーム送信を継続
+                    } else if (
+                        (dateInput === '' && startTimeInput === '') ||
+                        (dateInput === '' && endTimeInput === '') ||
+                        (startTimeInput === '' && endTimeInput === '') ||
+                        dateInput === '' ||
+                        startTimeInput === '' ||
+                        endTimeInput === ''
+                    ) {
+                        alert('全ての日程を入力してください。');
+                        return false;  // フォーム送信を中止
+                    }
+                }
+            }
+            removeBottomRow();
+            return true;  // フォーム送信を継続
+        }
+
+        function removeBottomRow() {
+            // table要素を取得
+            var tableElem = document.getElementById('my-table');
+            if (tableElem.rows.length > 2) {
+                // tbody要素にある最後の行（tr要素）を削除
+                tableElem.tBodies[0].deleteRow(-1);
+            }
+            // フォームをサブミット
+            document.getElementById('my-form').submit();
+        }
+
+        function removeExample(button) {
+            var tableElem = document.getElementById('my-table');
+            if (tableElem.rows.length > 2) {
+                let parent = button.parentNode.parentNode;
+                parent.remove();
+            }
+        }
+    </script>
+
+    {% if user.is_authenticated %}
+    {% if user_tables %}
+    <p> 過去のイベント : </p>
+    <ul>
+        {% for table in user_tables %}
+            <li><a href="{{ table.get_absolute_url }}">{{ table.event }}</a></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>You don't have any tables yet.</p>
+    {% endif %}
+    {% endif %}
+</body>
+</html>

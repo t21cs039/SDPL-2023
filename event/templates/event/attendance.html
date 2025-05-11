@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Page</title>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+        }
+
+        h1, h2{
+            color: #333;
+        }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .weather-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .weather-table th, .weather-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .weather-table th {
+            background-color: #f2f2f2;
+        }
+
+        .humidity-info {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            width: 100%;
+            text-align: left;
+        }
+        button.submit-button {
+            width: 30%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #header {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #branding {
+        	color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0; /* マージンを追加 */
+        }
+
+        #login-links {
+        	color: white;
+            text-align: right;
+            margin-top: 10px; /* リンクと"You are not logged in"の間に隙間を追加 */
+        }
+
+        #login-link,
+        #sign-link {
+            color: white;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+{# 登録完了メッセージを表示 #}
+{% if messages %}
+    {% for message in messages %}
+        {% if message.tags %}
+            <script>alert("{{ message }}")</script>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{# 出たメッセージを消す #}
+{% if messages %}
+    {% for message in messages %}
+    {% endfor %}
+{% endif %}
+    
+<body>
+	<div id="header">
+        <p id="branding">Let’s Chousei!</p>
+        <div id="login-links">
+            <p>{% if user.is_authenticated %}
+            {{ user.username }} | 
+            <a href="{% url 'event:logout' %}">Log Out</a>
+            {% else %}
+            You are not logged in </p>
+            <a href="{% url 'event:login' %}?next={{ request.path }}" id="login-link">Log In</a>
+            |<a href="{% url 'event:register' %}?next={{ request.path }}" id="sign-link">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+
+
+<h2>イベント名: {{ table_instance.event }}</h2>
+
+<input type="text" id="copyText" value="{{ url_to_copy }}" readonly>
+<button onclick="copyToClipboard()">コピーする</button>
+<p id="copySuccessMessage" style="display: none; color: green; font-size: 12px;">リンクをコピーしました</p>
+
+<script>
+    function copyToClipboard() {
+        /* Get the text field */
+        var copyText = document.getElementById("copyText");
+
+        /* Select the text field */
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+        /* Copy the text inside the text field */
+        document.execCommand("copy");
+
+        /* Display the copy success message */
+        var copySuccessMessage = document.getElementById("copySuccessMessage");
+        copySuccessMessage.style.display = "inline";
+
+        /* Hide the message after a certain duration (e.g., 2 seconds) */
+        setTimeout(function() {
+            copySuccessMessage.style.display = "none";
+        }, 2000);
+    }
+</script>
+
+<p>パスワード: {{ table_instance.password }}</p>
+<p>住所: {{ table_instance.address }}</p>
+<p>フリーテキスト: {{ table_instance.freetext }}</p>
+
+<h2>5日間の天気情報</h2>
+{% if weather_data %}
+    <table class="weather-table">
+        <thead>
+            <tr>
+                <th>日程</th>
+                <th>気温 (°C)</th>
+                <th>湿度</th>
+                <th>天気</th>
+                <th>風速</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day_data in weather_data %}
+                <tr>
+                    <td>{{ day_data.日程 }}</td>
+                    <td>{{ day_data.気温 }}</td>
+                    <td> {{ day_data.湿度 }}</td>
+                    <td>{{ day_data.天気 }}</td>
+                    <td>{{ day_data.風速 }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>天気情報はありません。</p>
+{% endif %}
+
+
+<p></p>
+
+<h2>出欠入力</h2>
+<form method="post" action="{% url 'event:attendance' table_instance.pk %}">
+    {% csrf_token %}
+    
+    <label for="{{ attendee_form.name.id_for_label }}">名前:<span style="color: red;">(必須入力)</span></label>
+    {{ attendee_form.name}}
+    
+	<label style="color: red; display: inline;">(必須入力)</label>
+	{{ date_availability_formset.management_form }}
+	{% for form in date_availability_formset %}
+	    {{ form.date.initial.formatted_date }} {{ form.date.initial.formatted_start_time }} ~ {{ form.date.initial.formatted_end_time}}
+	    {{ form.date }}
+	    {{ form.availability }}
+	{% endfor %}
+    
+    <label for="{{ attendee_form.comment.id_for_label }}">コメント:<span style="color: black;">(任意入力)</label>
+    {{ attendee_form.comment}}
+	<p></p>
+    <button type="submit" class="submit-button">出欠入力する</button>
+</form>
+
+<h2>参加者情報</h2>
+<table>
+    <thead>
+        <tr>
+            <th>日程</th>
+            <th>開始時間</th>
+            <th>終了時間</th>
+            {% for attendee in attendees %}
+				<th><a href="{% url 'event:edit_attendance' table_instance.pk attendee.id %}">{{ attendee.name }}</a></th>            
+				{% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+       {% for entry in date_time_entries %}
+        <tr>
+	        {% if entry == best_date %}
+	        <td>{{ entry.formatted_date }}✅</td>
+	        {% else %}
+	        <td>{{ entry.formatted_date }}</td>
+	        {%endif %}
+	         <td>{{ entry.formatted_start_time }}</td>
+	         <td>{{ entry.formatted_end_time }}</td>
+			{% for attendee in attendee_availability %}
+				{% if attendee.date == entry %}
+					{% if attendee.availability == 'yes' %}
+                    <td> ◎ </td>
+                    {% elif attendee.availability == 'maybe' %}
+                    <td> △ </td>
+                    {% else %}
+                    <td> ☓ </td>
+                    {% endif%}
+                  {% endif%}
+            {% endfor %}
+            
+             </tr>
+        {% endfor %}
+
+        <!-- New row for attendee comments at the bottom -->
+        <tr>
+            <td colspan="3">コメント:</td>
+            {% for attendee in attendees %}
+                <td>{{ attendee.comment }}</td>
+            {% endfor %}
+        </tr>
+    </tbody>
+</table>
+<a href="{% url 'event:update_table' table_instance.pk %}">
+    <button class="submit-button">イベントを編集</button>
+</a>
+
+{% if user.is_authenticated %}
+{% if user_tables %}
+<p> 過去のイベント : </p>
+<ul>
+    {% for table in user_tables %}
+        <li><a href="{{ table.get_absolute_url }}">{{ table.event }}</a></li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>You don't have any tables yet.</p>
+{% endif %}
+{% endif %}
+</body>
+</html>
